@@ -12,6 +12,13 @@
 import re, sys
 import copy as pycopy
 
+def warn(*s):
+    print("".join(map(str, s)), file=sys.stderr)
+
+def die(*s):
+    warn(*s)
+    sys.exit(1)
+
 confidence = 0.95
 
 has_confidence = False
@@ -36,13 +43,6 @@ try:
     can_plot = True
 except:
     pass
-
-def warn(*s):
-    print >>sys.stderr, "".join(map(str, s))
-
-def die(*s):
-    warn(*s)
-    sys.exit(1)
 
 def line_styles():
     #colours = ['#7fc97f','#beaed4','#fdc086','#a6cee3','#1f78b4','#b2df8a','#66c2a5','#fc8d62','#8da0cb','#1f78b4']
