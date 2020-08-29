@@ -11,7 +11,6 @@
 
 import re, sys
 import copy as pycopy
-import cPickle as pickle
 
 confidence = 0.95
 
@@ -19,7 +18,6 @@ has_confidence = False
 try:
     from numpy import *
     import numpy as np
-    import numpy.numarray as na
 
     from scipy.stats.distributions import norm
 
@@ -267,7 +265,7 @@ def plot_entries(pages, data, threads, rate_title, rate_keys, error_title, error
                 style = ls.pop()
                 ax.plot(xs, ys, c=style['c'], ls=style['ls'], marker=style['m'], label=label, lw=style['lw'])
             else:
-                print rate_keys, thread, label, 'no data'
+                print(rate_keys, thread, label, 'no data')
 
     if rate_title is not None:
         ax.set_title(rate_title)
@@ -315,7 +313,7 @@ def plot_entries(pages, data, threads, rate_title, rate_keys, error_title, error
                     style = ls.pop()
                     ax.plot(xs, ys, c=style['c'], ls=style['ls'], marker=style['m'], label=cn, lw=style['lw'])
                 else:
-                    print error_keys, thread, key, cv, cn, 'no data'
+                    print(error_keys, thread, key, cv, cn, 'no data')
 
             if error_title is not None:
                 ax.set_title(error_title + ' ' + label)
@@ -378,7 +376,7 @@ def avg_with_error(_d):
     try:
         d = map(float, _d)
     except:
-        print _d
+        print(_d)
         raise
     if has_confidence:
         n = len(d)
@@ -448,7 +446,7 @@ def lt_data(n, data):
     return result
 
 def report_entry(entry):
-    print ", ".join(map(str,[entry['test'], entry['op_size'], float(entry['ns']) / float(entry['count']), float(entry['cycles']) / float(entry['count'])]))
+    print(", ".join(map(str,[entry['test'], entry['op_size'], float(entry['ns']) / float(entry['count']), float(entry['cycles']) / float(entry['count'])])))
 
 def plot_data(fn, data):
     ops_read = ['x_read32', 'x_read64', 'u_read32', 'u_read64']
@@ -523,13 +521,13 @@ def main(args):
     if not can_plot:
         warn('unable to plot')
 
-    print 'parsing', log_file
+    print('parsing', log_file)
     data = parse_log(log_file)
     
     for (name, entries) in data:
-        print name
+        print(name)
 
-    print 'plotting graphs to', out_file
+    print('plotting graphs to', out_file)
     if can_plot:
         plot_data(out_file, data)
 
