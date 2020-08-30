@@ -374,7 +374,7 @@ def add_entry(dst, src):
 
 def avg_with_error(_d):
     try:
-        d = map(float, _d)
+        d = list(map(float, _d))
     except:
         print(_d)
         raise
