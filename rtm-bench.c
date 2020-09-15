@@ -820,6 +820,7 @@ static inline void run_test(const int id,
     if (config_op_stride_fixed) {
         stride = config_op_stride_size;
     } else {
+        // mutliple of cache line
         stride = (op_size + (CACHELINE_BYTES - 1)) & (~(CACHELINE_BYTES - 1));
     }
     ptr = mem;
