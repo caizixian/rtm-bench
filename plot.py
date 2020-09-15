@@ -9,5 +9,7 @@ for log in pathlib.Path(".").glob(pattern):
     basename = log.stem
     plot_name = "{}.pdf".format(basename)
     log_plot_name = "{}-log.pdf".format(basename)
-    subprocess.run(["./rtm-graphs.py", str(log), plot_name])
-    subprocess.run(["./rtm-graphs.py", str(log), log_plot_name, "log"])
+    if not pathlib.Path(plot_name).exists():
+        subprocess.run(["./rtm-graphs.py", str(log), plot_name])
+    if not pathlib.Path(log_plot_name).exists():
+        subprocess.run(["./rtm-graphs.py", str(log), log_plot_name, "log"])
