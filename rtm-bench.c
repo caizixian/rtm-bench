@@ -42,6 +42,10 @@
 
 #include "rtm.h"
 
+#ifndef GIT_VERSION
+#define GIT_VERSION "UNDEFINED"
+#endif
+
 // memory constants
 #define CACHELINE_BYTES         (64)
 #if __LP64__
@@ -1186,6 +1190,11 @@ static void run_limited_thread_tests(void)
 
 int main(int argc, char *argv[])
 {
+    printf("rtm-build commit %s\n", GIT_VERSION);
+    printf("Host: ");
+    fflush(stdout);
+    system("hostname");
+    system("lscpu | grep \"Model name\"");
     // setup
     config_max_threads = sysconf(_SC_NPROCESSORS_ONLN); 
     config_max_threads /= 2;
