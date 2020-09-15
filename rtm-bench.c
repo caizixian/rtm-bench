@@ -85,7 +85,8 @@ static unsigned int  config_isolated_tests      = 1;
 static unsigned int  config_shared_tests        = 1;
 static unsigned int  config_limited_tests       = 0;
 static unsigned int  config_op_log_size         = 0;
-static unsigned int  config_op_stride_zero      = 0;
+static unsigned int  config_op_stride_fixed     = 0;
+static unsigned int  config_op_stride_size      = 0;
 
 // thread data
 typedef struct _thread_param_t {
@@ -816,8 +817,8 @@ static inline void run_test(const int id,
     for (i = 0; i < N_COUNTERS; ++i)
         counter[i] = 0;
     
-    if (config_op_stride_zero) {
-        stride = 0;
+    if (config_op_stride_fixed) {
+        stride = config_op_stride_size;
     } else {
         stride = (op_size + (CACHELINE_BYTES - 1)) & (~(CACHELINE_BYTES - 1));
     }
@@ -984,7 +985,7 @@ static void usage(char *name)
         "  -S           disable shared memory tests\n"
         "  -x           enable limited thread test program\n"
         "  -L           enable log increment for op size\n"
-        "  -s           enable zero stride for op\n"
+        "  -s           use a fixed stride for op\n"
         "\n",
         name,
         config_thread_memory_size,
@@ -1020,7 +1021,7 @@ static unsigned long ensure_pow2(unsigned long x)
 static void parse_args(int argc, char *argv[])
 {
     char ch;
-    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:TISxLs")) != -1) {
+    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:TISxL:s")) != -1) {
         switch(ch) {
             case 'm':
                 config_thread_memory_size = strtol(optarg, NULL, 10);
@@ -1061,7 +1062,9 @@ static void parse_args(int argc, char *argv[])
                 config_op_log_size = 1;
                 break;
             case 's':
-                config_op_stride_zero = 1;
+                config_op_stride_fixed = 1;
+                config_op_stride_size = strtol(optarg, NULL, 10);
+                config_op_stride_size = ensure_pow2(config_op_stride_size);
                 break;
             case '?':
             default:
