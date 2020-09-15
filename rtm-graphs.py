@@ -140,6 +140,8 @@ def enhance_entry(entry):
     entry['pcc_e'] = pcc_e
 
 def parse_test(mode, threads):
+    # in case of single threaded tests with thread shifting
+    # the threads dictionary will have sleeper
     test_line = re.compile(r'test = (\S+), count = (\d+), op_size = (\d+), stride = (\d+)')
     mode_line = re.compile(r'[ux]_(read|write|cas|abortn|abortm)')
     timing_line = re.compile(r'ns = (\d+), cycles = (\d+)')
@@ -184,7 +186,8 @@ def parse_test(mode, threads):
     for thread in range(n_threads):
         if (thread in data) and (len(data[thread]) > 0):
             key.append(thread_mode[thread])
-
+    # in case of single threaded tests with thread shifting
+    # the data from sleeper threads are thrown away
     return (key, data)
 
 def parse_log(fn):
@@ -234,6 +237,10 @@ def parse_log(fn):
             buffer[thread].append(i_line)
             if in_reset and len(buffer[thread]) >= 3:
                 in_reset = False
+    # flush reminding data
+    if len(buffer.keys()) > 0:
+        (key, results) = parse_test(mode, buffer)
+        data.append(([mode,memory] + key, results))
     fh.close()
 
     return data
@@ -464,6 +471,7 @@ def plot_data(fn, data):
 
     st = sum_data(select_data(['single', 'isolated'], data))
     st_64 = cl_data(st)
+    # zoom in for certain data
     st_lt300 = lt_data(280, st)
     st_lt1000 = lt_data(1000, st)
 
