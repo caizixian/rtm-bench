@@ -80,6 +80,8 @@ static unsigned int  config_thread_shifting     = 1;
 static unsigned int  config_isolated_tests      = 1;
 static unsigned int  config_shared_tests        = 1;
 static unsigned int  config_limited_tests       = 0;
+static unsigned int  config_op_log_size         = 0;
+static unsigned int  config_op_stride_zero      = 0;
 
 // thread data
 typedef struct _thread_param_t {
@@ -810,7 +812,11 @@ static inline void run_test(const int id,
     for (i = 0; i < N_COUNTERS; ++i)
         counter[i] = 0;
     
-    stride = (op_size + (CACHELINE_BYTES - 1)) & (~(CACHELINE_BYTES - 1));
+    if (config_op_stride_zero) {
+        stride = 0;
+    } else {
+        stride = (op_size + (CACHELINE_BYTES - 1)) & (~(CACHELINE_BYTES - 1));
+    }
     ptr = mem;
 
     thread_log(id, "test = %s, count = %lu, op_size = %lu, stride = %lu",
@@ -841,6 +847,22 @@ static inline void run_test(const int id,
     barrier();
 }
 
+static unsigned int incre_op_size(unsigned int op_size, unsigned int small_step)
+{
+    if (config_op_log_size) {
+        if (op_size == 0) {
+            return 1;
+        } else {
+            return op_size * 2;
+        }
+    }
+    if (op_size < 1024) {
+        return op_size + small_step;
+    } else {
+        return op_size + CACHELINE_BYTES;
+    }
+}
+
 static void *test_thread(void *param)
 {
     const int id = (long) param;
@@ -856,27 +878,27 @@ static void *test_thread(void *param)
         switch (thread_params[id].type) {
             case U_READ:
                 thread_log(id, "u_read");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
                     run_test(id, "u_read32", mem, mem_size, u_read32, compute_op_cycles(n), n);
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) 
                     run_test(id, "u_read64", mem, mem_size, u_read64, compute_op_cycles(n), n);
                 break;
     
             case U_WRITE:
                 thread_log(id, "u_write");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
                     run_test(id, "u_write32", mem, mem_size, u_write32, compute_op_cycles(n), n);
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) 
                     run_test(id, "u_write64", mem, mem_size, u_write64, compute_op_cycles(n), n);
                 break;
 
             case U_CAS:
                 thread_log(id, "u_cas");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) { 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) { 
                     memset32(mem, CAS_P, mem_size);
                     run_test(id, "u_cas32", mem, mem_size, u_cas32, compute_op_cycles(n), n);
                 }
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) {
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) {
                     memset64(mem, CAS_P, mem_size);
                     run_test(id, "u_cas64", mem, mem_size, u_cas64, compute_op_cycles(n), n);
                 }
@@ -884,27 +906,27 @@ static void *test_thread(void *param)
    
             case X_READ:
                 thread_log(id, "x_read");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
                     run_test(id, "x_read32", mem, mem_size, x_read32, compute_op_cycles(n), n);
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) 
                     run_test(id, "x_read64", mem, mem_size, x_read64, compute_op_cycles(n), n);
                 break;
 
             case X_WRITE:
                 thread_log(id, "x_write");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
                     run_test(id, "x_write32", mem, mem_size, x_write32, compute_op_cycles(n), n);
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) 
                     run_test(id, "x_write64", mem, mem_size, x_write64, compute_op_cycles(n), n);
                 break;
     
             case X_CAS:
                 thread_log(id, "x_cas");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) { 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) { 
                     memset32(mem, CAS_P, mem_size);
                     run_test(id, "x_cas32", mem, mem_size, x_cas32, compute_op_cycles(n), n);
                 }
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) { 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) { 
                     memset64(mem, CAS_P, mem_size);
                     run_test(id, "x_cas64", mem, mem_size, x_cas64, compute_op_cycles(n), n);
                 }
@@ -912,20 +934,20 @@ static void *test_thread(void *param)
             
             case X_ABORTN:
                 thread_log(id, "x_abortn");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) { 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) { 
                     run_test(id, "x_abortn32", mem, mem_size, x_abortn32, compute_op_cycles(n), n);
                 }
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) { 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) { 
                     run_test(id, "x_abortn64", mem, mem_size, x_abortn64, compute_op_cycles(n), n);
                 }
                 break;
             
             case X_ABORTM:
                 thread_log(id, "x_abortm");
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 4 : CACHELINE_BYTES)) { 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) { 
                     run_test(id, "x_abortm32", mem, mem_size, x_abortm32, compute_op_cycles(n), n);
                 }
-                for (n = 0; n < config_op_max_size; n += (n < 1024 ? 8 : CACHELINE_BYTES)) { 
+                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) { 
                     run_test(id, "x_abortm64", mem, mem_size, x_abortm64, compute_op_cycles(n), n);
                 }
                 break;
@@ -957,6 +979,8 @@ static void usage(char *name)
         "  -I           disable isolated memory tests\n"
         "  -S           disable shared memory tests\n"
         "  -x           enable limited thread test program\n"
+        "  -L           enable log increment for op size\n"
+        "  -s           enable zero stride for op\n"
         "\n",
         name,
         config_thread_memory_size,
@@ -992,7 +1016,7 @@ static unsigned long ensure_pow2(unsigned long x)
 static void parse_args(int argc, char *argv[])
 {
     char ch;
-    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:TISx")) != -1) {
+    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:TISxLs")) != -1) {
         switch(ch) {
             case 'm':
                 config_thread_memory_size = strtol(optarg, NULL, 10);
@@ -1028,6 +1052,12 @@ static void parse_args(int argc, char *argv[])
                 break;
             case 'x':
                 config_limited_tests = 1;
+                break;
+            case 'L':
+                config_op_log_size = 1;
+                break;
+            case 's':
+                config_op_stride_zero = 1;
                 break;
             case '?':
             default:
