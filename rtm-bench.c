@@ -1021,7 +1021,7 @@ static unsigned long ensure_pow2(unsigned long x)
 static void parse_args(int argc, char *argv[])
 {
     char ch;
-    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:TISxL:s")) != -1) {
+    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:TISxL")) != -1) {
         switch(ch) {
             case 'm':
                 config_thread_memory_size = strtol(optarg, NULL, 10);
