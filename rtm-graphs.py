@@ -272,6 +272,8 @@ def plot_entries(pages, data, threads, rate_title, rate_keys, error_title, error
     #ax.set_ylim(min_y, max_y)
     ax.set_ylabel('bytes/ns')
     ax.set_xlabel('bytes/op')
+    if plot_log:
+        ax.set_xscale("log")
     ax.legend(loc='best', ncol=2)
     
     fig.savefig(pages, format='pdf')
@@ -320,6 +322,8 @@ def plot_entries(pages, data, threads, rate_title, rate_keys, error_title, error
             ax.set_ylim(0.0, 100.0)
             ax.set_ylabel('%')
             ax.set_xlabel('bytes/op')
+            if plot_log:
+                ax.set_xscale("log")
             ax.legend(loc='best', ncol=1)
             
             fig.savefig(pages, format='pdf')
@@ -513,10 +517,14 @@ def read_data(fn):
 
 def main(args):
     if len(args) < 2:
-        die('rtm-graph.py <log-file> <output-file>') 
+        die('rtm-graph.py <log-file> <output-file> [<plot-log>]') 
 
     log_file = args[0]
     out_file = args[1]
+    global plot_log
+    plot_log = False
+    if len(args) == 3:
+        plot_log = True
 
     if not can_plot:
         warn('unable to plot')
