@@ -1085,6 +1085,8 @@ static void run_single_thread_tests(void)
     main_log("single thread tests");
 
     for (n = 0; n < (config_thread_shifting ? config_max_threads : 1); ++n) {
+        // the first n threads are fixed to the first n cores
+        // we use the n+1 th thread to run the test
         for (i = 1; i <= N_TESTS; ++i) {
             if (!can_run_test(i))
                 continue;
