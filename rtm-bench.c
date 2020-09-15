@@ -79,7 +79,7 @@ static unsigned int  config_test                = 0;
 static unsigned int  config_thread_shifting     = 1;
 static unsigned int  config_isolated_tests      = 1;
 static unsigned int  config_shared_tests        = 1;
-static unsigned int  config_limited_tests       = 1;
+static unsigned int  config_limited_tests       = 0;
 
 // thread data
 typedef struct _thread_param_t {
