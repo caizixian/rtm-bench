@@ -72,6 +72,10 @@ typedef struct _thread_log_t {
     char data[LOG_DATASIZE];
 } thread_log_t;
 
+#define CACHE_NOP 0
+#define CACHE_WARM 1
+#define CACHE_WBINVD 2
+
 // default configuration
 static unsigned int  config_max_threads         = 8;
 static unsigned long config_thread_memory_size  = 512 * 1024 * 1024;
@@ -87,6 +91,7 @@ static unsigned int  config_limited_tests       = 0;
 static unsigned int  config_op_log_size         = 0;
 static unsigned int  config_op_stride_fixed     = 0;
 static unsigned int  config_op_stride_size      = 0;
+static unsigned int  config_op_cache            = CACHE_NOP;
 
 // thread data
 typedef struct _thread_param_t {
@@ -129,6 +134,26 @@ enum thread_type_t {
     X_ABORTM    = 8,
     N_TESTS     = 8
 };
+
+/*
+ * cache operations
+ * 
+ */
+static void cache_nop(void* mem, size_t op_size) {
+    return;
+}
+
+static void cache_warm(void* mem, size_t op_size) {
+  // prevent optimization
+  volatile uint32_t *data = (volatile uint32_t *)mem;
+  size_t size = op_size / sizeof(uint32_t);
+  for (int j = 0; j < 5; j++) {
+    for (size_t i = 0; i < size; i++) {
+        __attribute__((unused)) uint32_t val = *(data + i);
+    }
+  }
+}
+
 
 /*
  * logging functions
@@ -832,6 +857,16 @@ static inline void run_test(const int id,
 
     timing_start(&t);
     while (count--) {
+        switch (config_op_cache) {
+            case CACHE_NOP:
+                cache_nop(ptr, op_size);
+                break;
+            case CACHE_WARM:
+                cache_warm(ptr, op_size);
+                break;
+            case CACHE_WBINVD:
+                break;
+        }
         unsigned ret = op(ptr, op_size);
         counter[ret]++;
         ptr += stride;
@@ -981,12 +1016,13 @@ static void usage(char *name)
         "  -t <number>  run a specific test          [default is all]\n"
         "  -l <number>  number of test loops         [default: %lu]\n"
         "  -z <number>  override max threads         [default: %d]\n"
+        "  -C <number>  cache behaviour 0: nop 1: warm up 2: wbinvd [default: %d]\n"
+        "  -s <number>  use a fixed stride for op    [default: adaptive]\n"
         "  -T           disable thread shifting\n"
         "  -I           disable isolated memory tests\n"
         "  -S           disable shared memory tests\n"
         "  -x           enable limited thread test program\n"
         "  -L           enable log increment for op size\n"
-        "  -s           use a fixed stride for op\n"
         "\n",
         name,
         config_thread_memory_size,
@@ -994,7 +1030,8 @@ static void usage(char *name)
         config_op_max_cycles,
         config_op_max_size,
         config_test_loops,
-        config_max_threads
+        config_max_threads,
+        config_op_cache
     );
     exit(2);
 }
@@ -1022,7 +1059,7 @@ static unsigned long ensure_pow2(unsigned long x)
 static void parse_args(int argc, char *argv[])
 {
     char ch;
-    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:TISxL")) != -1) {
+    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:C:TISxL")) != -1) {
         switch(ch) {
             case 'm':
                 config_thread_memory_size = strtol(optarg, NULL, 10);
@@ -1066,6 +1103,21 @@ static void parse_args(int argc, char *argv[])
                 config_op_stride_fixed = 1;
                 config_op_stride_size = strtol(optarg, NULL, 10);
                 config_op_stride_size = ensure_pow2(config_op_stride_size);
+                break;
+            case 'C':
+                config_op_cache = strtoul(optarg, NULL, 10);
+                switch (config_op_cache) {
+                    case CACHE_NOP:
+                        break;
+                    case CACHE_WARM:
+                        break;
+                    case CACHE_WBINVD:
+                        error_out("Cache operation option %u not implemented\n", config_op_cache);
+                        break;
+                    default:
+                        error_out("Invalid cache operation option %u\n", config_op_cache);
+                        break;
+                }
                 break;
             case '?':
             default:
