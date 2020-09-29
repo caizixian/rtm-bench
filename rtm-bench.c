@@ -136,26 +136,6 @@ enum thread_type_t {
 };
 
 /*
- * cache operations
- * 
- */
-static void cache_nop(void* mem, size_t op_size) {
-    return;
-}
-
-static void cache_warm(void* mem, size_t op_size) {
-  // prevent optimization
-  volatile uint32_t *data = (volatile uint32_t *)mem;
-  size_t size = op_size / sizeof(uint32_t);
-  for (int j = 0; j < 5; j++) {
-    for (size_t i = 0; i < size; i++) {
-        __attribute__((unused)) uint32_t val = *(data + i);
-    }
-  }
-}
-
-
-/*
  * logging functions
  */
 static void flush_thread_log(const int id)
@@ -825,6 +805,34 @@ static void *sleeper(void *param)
     return NULL;
 }
 
+/*
+ * cache operations
+ * 
+ */
+static void cache_nop(void* mem, size_t op_size) {
+    return;
+}
+
+static void cache_warm(void* mem, size_t op_size) {
+  // prevent optimization
+  volatile uint32_t *data = (volatile uint32_t *)mem;
+  size_t size = op_size / sizeof(uint32_t);
+  for (int j = 0; j < 5; j++) {
+    for (size_t i = 0; i < size; i++) {
+        __attribute__((unused)) uint32_t val = *(data + i);
+    }
+  }
+}
+
+static void cache_wbinvd(void* mem, size_t op_size) {
+    FILE *wbinvd = fopen("/proc/wbinvd", "r");
+    if (wbinvd == NULL) {
+        error_out("Unable to open /proc/wbinvd, please install the kernel module\n");
+    }
+    fgetc(wbinvd);
+    return;
+}
+
 static inline void run_test(const int id, 
         const char *label,
         uint8_t *mem, const unsigned long mem_size,
@@ -865,6 +873,7 @@ static inline void run_test(const int id,
                 cache_warm(ptr, op_size);
                 break;
             case CACHE_WBINVD:
+                cache_wbinvd(ptr, op_size);
                 break;
         }
         unsigned ret = op(ptr, op_size);
@@ -1112,7 +1121,6 @@ static void parse_args(int argc, char *argv[])
                     case CACHE_WARM:
                         break;
                     case CACHE_WBINVD:
-                        error_out("Cache operation option %u not implemented\n", config_op_cache);
                         break;
                     default:
                         error_out("Invalid cache operation option %u\n", config_op_cache);
