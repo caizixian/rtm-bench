@@ -848,6 +848,9 @@ static inline void run_test(const int id,
     unsigned long stride;
     unsigned long counter[N_COUNTERS];
     unsigned long count = _count;
+    if (config_op_cache == CACHE_WBINVD && count > 4096) {
+        count = 4096; // wbinvd is costly, cap at 4096, otherwise, we will never finish
+    }
     timing_t t;
     uint8_t *ptr;
     int i;
