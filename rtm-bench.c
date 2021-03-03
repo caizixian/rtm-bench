@@ -29,6 +29,8 @@
 
 #include <pthread.h>
 #include <unistd.h>
+#include <err.h>
+#include <sysexits.h>
 #include <errno.h>
 #include <time.h>
 
@@ -827,9 +829,12 @@ static void cache_warm(void* mem, size_t op_size) {
 static void cache_wbinvd(void* mem, size_t op_size) {
     FILE *wbinvd = fopen("/proc/wbinvd", "r");
     if (wbinvd == NULL) {
-        error_out("Unable to open /proc/wbinvd, please install the kernel module\n");
+        err(EX_OSFILE, "Unable to open /proc/wbinvd");
     }
     fgetc(wbinvd);
+    if (fclose(wbinvd) != 0) {
+        err(EX_OSFILE, "Unable to close /proc/wbinvd");
+    }
     return;
 }
 
