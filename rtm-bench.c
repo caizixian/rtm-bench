@@ -94,6 +94,7 @@ static unsigned int  config_op_log_size         = 0;
 static unsigned int  config_op_stride_fixed     = 0;
 static unsigned int  config_op_stride_size      = 0;
 static unsigned int  config_op_cache            = CACHE_NOP;
+static unsigned long config_fix_count           = 0;
 
 // thread data
 typedef struct _thread_param_t {
@@ -848,9 +849,21 @@ static inline void run_test(const int id,
     unsigned long stride;
     unsigned long counter[N_COUNTERS];
     unsigned long count = _count;
-    if (config_op_cache == CACHE_WBINVD && count > 4096) {
-        count = 4096; // wbinvd is costly, cap at 4096, otherwise, we will never finish
+    if (config_op_cache == CACHE_WBINVD) {
+        if (config_fix_count == 0) {
+            err(EXIT_FAILURE, "Please set a cap for retries for wbinvd");
+        } else {
+            if (count > config_fix_count) {
+                // wbinvd is costly, cap at a given value, otherwise, we will never finish
+                count = config_fix_count;
+            }
+        }
+    } else {
+        if (config_fix_count != 0) {
+            count = config_fix_count;
+        }
     }
+    
     timing_t t;
     uint8_t *ptr;
     int i;
@@ -1076,7 +1089,7 @@ static unsigned long ensure_pow2(unsigned long x)
 static void parse_args(int argc, char *argv[])
 {
     char ch;
-    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:C:TISxL")) != -1) {
+    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:n:C:TISxL")) != -1) {
         switch(ch) {
             case 'm':
                 config_thread_memory_size = strtol(optarg, NULL, 10);
@@ -1134,6 +1147,9 @@ static void parse_args(int argc, char *argv[])
                         error_out("Invalid cache operation option %u\n", config_op_cache);
                         break;
                 }
+                break;
+            case 'n':
+                config_fix_count = strtol(optarg, NULL, 10);
                 break;
             case '?':
             default:
