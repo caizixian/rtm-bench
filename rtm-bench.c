@@ -95,6 +95,7 @@ static unsigned int  config_op_stride_fixed     = 0;
 static unsigned int  config_op_stride_size      = 0;
 static unsigned int  config_op_cache            = CACHE_NOP;
 static unsigned long config_fix_count           = 0;
+static unsigned int  config_cache_warm          = 5;
 
 // thread data
 typedef struct _thread_param_t {
@@ -820,7 +821,7 @@ static void cache_warm(void* mem, size_t op_size) {
   // prevent optimization
   volatile uint32_t *data = (volatile uint32_t *)mem;
   size_t size = op_size / sizeof(uint32_t);
-  for (int j = 0; j < 5; j++) {
+  for (int j = 0; j < config_cache_warm; j++) {
     for (size_t i = 0; i < size; i++) {
         __attribute__((unused)) uint32_t val = *(data + i);
     }
@@ -1046,8 +1047,10 @@ static void usage(char *name)
         "  -t <number>  run a specific test          [default is all]\n"
         "  -l <number>  number of test loops         [default: %lu]\n"
         "  -z <number>  override max threads         [default: %d]\n"
-        "  -C <number>  cache behaviour 0: nop 1: warm up 2: wbinvd [default: %d]\n"
+        "  -C <number>  cache behaviour 0: nop 1: warm up 2: wbinvd [default: %u]\n"
+        "  -w <number>  number of iterations to warm up the cache [default: %u]"
         "  -s <number>  use a fixed stride for op    [default: adaptive]\n"
+        "  -n <number>  run each test a fix number of times [default: adaptive]\n"
         "  -T           disable thread shifting\n"
         "  -I           disable isolated memory tests\n"
         "  -S           disable shared memory tests\n"
@@ -1061,7 +1064,8 @@ static void usage(char *name)
         config_op_max_size,
         config_test_loops,
         config_max_threads,
-        config_op_cache
+        config_op_cache,
+        config_cache_warm
     );
     exit(2);
 }
@@ -1150,6 +1154,9 @@ static void parse_args(int argc, char *argv[])
                 break;
             case 'n':
                 config_fix_count = strtol(optarg, NULL, 10);
+                break;
+            case 'w':
+                config_cache_warm = strtol(optarg, NULL, 10);
                 break;
             case '?':
             default:
