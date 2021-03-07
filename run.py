@@ -14,12 +14,12 @@ if not tests:
         "-o 33554432 -t 5 -T -I -S -L -C 1", # read, warmup
         "-o 33554432 -t 4 -T -I -S -L -C 2", # read, wbinvd
     ]
-    tests += ["-o 33554432 -t 5 -T -I -S -L -C 0"] # write, baseline
-    tests += ["-o 33554432 -t 5 -T -I -S -L -C 0 -s 0 -n {}".format(2**n) for n in range(0, 13)] # write, reuse
-    tests += [
-        "-o 33554432 -t 5 -T -I -S -L -C 1", # write, warmup
-        "-o 33554432 -t 5 -T -I -S -L -C 2", # write, wbinvd
-    ]
+    # tests += ["-o 33554432 -t 5 -T -I -S -L -C 0"] # write, baseline
+    # tests += ["-o 33554432 -t 5 -T -I -S -L -C 0 -s 0 -n {}".format(2**n) for n in range(0, 13)] # write, reuse
+    # tests += [
+    #     "-o 33554432 -t 5 -T -I -S -L -C 1", # write, warmup
+    #     "-o 33554432 -t 5 -T -I -S -L -C 2", # write, wbinvd
+    # ]
 
 for test in tests:
     raw_args = test.split()

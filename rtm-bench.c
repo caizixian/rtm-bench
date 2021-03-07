@@ -925,7 +925,8 @@ static unsigned int incre_op_size(unsigned int op_size, unsigned int small_step)
         if (op_size == 0) {
             return 1;
         } else {
-            return op_size * 2;
+            if (op_size >= 1048576)
+                return op_size + 1048576;
         }
     }
     if (op_size < 1024) {
