@@ -11,8 +11,8 @@ if not tests:
     tests += ["-o 33554432 -t 4 -T -I -S -L -C 0"] # read, baseline
     tests += ["-o 33554432 -t 4 -T -I -S -L -C 0 -s 0 -n {}".format(2**n) for n in range(0, 13)] # read, reuse
     tests += [
-        "-o 33554432 -t 5 -T -I -S -L -C 1", # read, warmup
-        "-o 33554432 -t 4 -T -I -S -L -C 2", # read, wbinvd
+        "-o 33554432 -t 4 -T -I -S -L -C 1", # read, warmup
+        "-o 33554432 -t 4 -T -I -S -L -C 2 -n 4096", # read, wbinvd
     ]
     # tests += ["-o 33554432 -t 5 -T -I -S -L -C 0"] # write, baseline
     # tests += ["-o 33554432 -t 5 -T -I -S -L -C 0 -s 0 -n {}".format(2**n) for n in range(0, 13)] # write, reuse
@@ -30,7 +30,7 @@ for test in tests:
         else:
             args.append((token, ""))
 
-    encode_args = "".join([arg[0][1:] + arg[1] for arg in args])
+    encode_args = "_".join([arg[0][1:] + arg[1] for arg in args])
 
     log_name = "{}-{}-{}.log".format(socket.gethostname(), int(time.time()), encode_args)
     cmd = ["./rtm-bench"]

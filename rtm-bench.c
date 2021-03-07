@@ -981,16 +981,16 @@ static void *test_thread(void *param)
    
             case X_READ:
                 thread_log(id, "x_read");
-                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
-                    run_test(id, "x_read32", mem, mem_size, x_read32, compute_op_cycles(n), n);
+                // for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
+                //     run_test(id, "x_read32", mem, mem_size, x_read32, compute_op_cycles(n), n);
                 for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) 
                     run_test(id, "x_read64", mem, mem_size, x_read64, compute_op_cycles(n), n);
                 break;
 
             case X_WRITE:
                 thread_log(id, "x_write");
-                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
-                    run_test(id, "x_write32", mem, mem_size, x_write32, compute_op_cycles(n), n);
+                // for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
+                //     run_test(id, "x_write32", mem, mem_size, x_write32, compute_op_cycles(n), n);
                 for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) 
                     run_test(id, "x_write64", mem, mem_size, x_write64, compute_op_cycles(n), n);
                 break;
