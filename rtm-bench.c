@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #include <pthread.h>
 #include <unistd.h>
@@ -938,6 +939,10 @@ static unsigned int incre_op_size(unsigned int op_size, unsigned int small_step)
     }
 }
 
+static double incre_op_size_double(double op_size) {
+    return op_size * pow(2.0, 1.0 / 4.0);
+}
+
 static void *test_thread(void *param)
 {
     const int id = (long) param;
@@ -983,8 +988,10 @@ static void *test_thread(void *param)
                 thread_log(id, "x_read");
                 // for (n = 0; n < config_op_max_size; n = incre_op_size(n, 4)) 
                 //     run_test(id, "x_read32", mem, mem_size, x_read32, compute_op_cycles(n), n);
-                for (n = 0; n < config_op_max_size; n = incre_op_size(n, 8)) 
+                for (double nd = 1; nd < config_op_max_size; nd = incre_op_size_double(nd)) {
+                    n = round(nd);
                     run_test(id, "x_read64", mem, mem_size, x_read64, compute_op_cycles(n), n);
+                }
                 break;
 
             case X_WRITE:

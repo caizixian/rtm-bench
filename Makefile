@@ -1,6 +1,6 @@
 targets = rtm-bench
 cc = gcc -O2 -Wall
-link = -lpthread -lrt
+link = -lpthread -lrt -lm
 GIT_VERSION := "$(shell git describe --abbrev=8 --dirty --always --tags)"
 # remove -lrt to compile on OS X
 
