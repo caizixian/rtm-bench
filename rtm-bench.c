@@ -940,7 +940,7 @@ static unsigned int incre_op_size(unsigned int op_size, unsigned int small_step)
 }
 
 static double incre_op_size_double(double op_size) {
-    return op_size * pow(2.0, 1.0 / 4.0);
+    return op_size * pow(2.0, 1.0 / 20.0);
 }
 
 static void *test_thread(void *param)
