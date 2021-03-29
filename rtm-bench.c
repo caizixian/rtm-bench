@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <time.h>
 
+#include <linux/mman.h> // MAP_HUGE_1GB
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <sched.h>
@@ -81,8 +82,8 @@ typedef struct _thread_log_t {
 
 // default configuration
 static unsigned int  config_max_threads         = 8;
-static unsigned long config_thread_memory_size  = 512 * 1024 * 1024;
-static unsigned long config_thread_gap_size     = 512 * 1024 * 1024;
+static unsigned long config_thread_memory_size  = 1024 * 1024 * 1024;
+static unsigned long config_thread_gap_size     = 1024 * 1024 * 1024;
 static unsigned long config_op_max_size         = 32 * 1024;
 static unsigned long config_op_max_cycles       = 128 * 1024;
 static unsigned long config_test_loops          = 1;
@@ -97,6 +98,7 @@ static unsigned int  config_op_stride_size      = 0;
 static unsigned int  config_op_cache            = CACHE_NOP;
 static unsigned long config_fix_count           = 0;
 static unsigned int  config_cache_warm          = 5;
+static unsigned int  config_map_hugetlb         = 0;
 
 // thread data
 typedef struct _thread_param_t {
@@ -422,12 +424,17 @@ static void setup_memory(const int max_threads,
 {
     unsigned int i;
     //int ret;
-    
+    int flags = MAP_PRIVATE|MAP_ANONYMOUS;
+    if (config_map_hugetlb) {
+        flags |= MAP_HUGETLB|MAP_HUGE_1GB;
+    }
+
     memory_size = (max_threads * thread_length) 
                     + ((max_threads - 1) * gap_length); 
-    main_log("allocating memory %llu bytes", memory_size); 
+    main_log("allocating memory %llu bytes", memory_size);
+
     memory_ptr = mmap((void *)MEM_BASE, memory_size, 
-            PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+            PROT_READ|PROT_WRITE, flags, 0, 0);
 
     if (memory_ptr == ((char *)(-1))) {
         memory_ptr = NULL;
@@ -1063,7 +1070,7 @@ static void usage(char *name)
         "  -l <number>  number of test loops         [default: %lu]\n"
         "  -z <number>  override max threads         [default: %d]\n"
         "  -C <number>  cache behaviour 0: nop 1: warm up 2: wbinvd [default: %u]\n"
-        "  -w <number>  number of iterations to warm up the cache [default: %u]"
+        "  -w <number>  number of iterations to warm up the cache [default: %u]\n"
         "  -s <number>  use a fixed stride for op    [default: adaptive]\n"
         "  -n <number>  run each test a fix number of times [default: adaptive]\n"
         "  -T           disable thread shifting\n"
@@ -1071,6 +1078,7 @@ static void usage(char *name)
         "  -S           disable shared memory tests\n"
         "  -x           enable limited thread test program\n"
         "  -L           enable log increment for op size\n"
+        "  -H           enable huge page support\n"
         "\n",
         name,
         config_thread_memory_size,
@@ -1108,7 +1116,7 @@ static unsigned long ensure_pow2(unsigned long x)
 static void parse_args(int argc, char *argv[])
 {
     char ch;
-    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:n:C:w:TISxL")) != -1) {
+    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:n:C:w:TISxLH")) != -1) {
         switch(ch) {
             case 'm':
                 config_thread_memory_size = strtol(optarg, NULL, 10);
@@ -1172,6 +1180,9 @@ static void parse_args(int argc, char *argv[])
                 break;
             case 'w':
                 config_cache_warm = strtol(optarg, NULL, 10);
+                break;
+            case 'H':
+                config_map_hugetlb = 1;
                 break;
             case '?':
             default:
