@@ -79,6 +79,7 @@ typedef struct _thread_log_t {
 #define CACHE_NOP 0
 #define CACHE_WARM 1
 #define CACHE_WBINVD 2
+#define LLC_SIZE 8 * 1024 * 1024
 
 // default configuration
 static unsigned int  config_max_threads         = 8;
@@ -99,6 +100,14 @@ static unsigned int  config_op_cache            = CACHE_NOP;
 static unsigned long config_fix_count           = 0;
 static unsigned int  config_cache_warm          = 5;
 static unsigned int  config_map_hugetlb         = 0;
+static unsigned int  config_skip_bad_sets       = 0;
+
+#define BAD_SET_LOW 768
+#define BAD_SET_HIGH 831
+
+static unsigned int set_id(void* addr) {
+    return (((uint64_t) addr) >> 6) & ((1<<11) - 1);
+}
 
 // thread data
 typedef struct _thread_param_t {
@@ -117,6 +126,7 @@ static volatile int barrier_count;
 
 // shared memory
 static void *memory_ptr = NULL;
+static void *garbage_ptr = NULL;
 static unsigned long memory_size = 0;
 static int use_shared_memory = 0;
 static void **thread_memory = NULL;
@@ -448,6 +458,12 @@ static void setup_memory(const int max_threads,
     main_log("initialising memory: start"); 
     memset(memory_ptr, 0, memory_size);
     main_log("initialising memory: finish"); 
+
+    garbage_ptr = mmap(NULL, 1024UL * 1024UL * 1024UL, PROT_READ|PROT_WRITE, flags, 0, 0);
+    if (garbage_ptr == MAP_FAILED) {
+        error_out("failed to allocate garbage, errno: %d", errno);
+    }
+
     /*
     ret = mlock(memory_ptr, memory_size);
     if (ret) {
@@ -672,6 +688,31 @@ static inline unsigned x_read64(uint8_t *_mem, const unsigned long _size)
     return ret;   
 }
 
+static inline unsigned x_read64_skip(uint8_t *_mem, const unsigned long _size)
+{
+    volatile uint64_t *mem = (volatile uint64_t *)_mem;
+    unsigned count = _size >> 3;
+    unsigned ret;
+    
+    //ret = _XBEGIN_STARTED;
+    ret = _xbegin();
+    if (ret == _XBEGIN_STARTED) { 
+        while (count--) {
+            //printf("Before mem: %p, id: %u, ", mem, set_id(mem));
+            if (set_id(mem) >= BAD_SET_LOW && set_id(mem) <= BAD_SET_HIGH) {
+                mem += 8*(BAD_SET_HIGH - set_id(mem) + 1); // skip all consecutive bad lines
+            }
+            //printf("After mem: %p, id: %u\n", mem, set_id(mem));
+            ret += *mem;
+            mem++;
+        }
+        _xend();
+        ret = SUCCESS;
+    }
+    
+    return ret;   
+}
+
 static inline unsigned u_write32(uint8_t *_mem, const unsigned long _size)
 {
     volatile uint32_t *mem = (volatile uint32_t *)_mem;
@@ -848,6 +889,12 @@ static void cache_wbinvd(void* mem, size_t op_size) {
     return;
 }
 
+static void fix_follower_set() {
+    for (int i = 0; i < 32; i++) {
+        cache_warm(garbage_ptr, LLC_SIZE);
+    }
+}
+
 static inline void run_test(const int id, 
         const char *label,
         uint8_t *mem, const unsigned long mem_size,
@@ -1002,7 +1049,12 @@ static void *test_thread(void *param)
                     } else {
                         n = round(nd);
                     }
-                    run_test(id, "x_read64", mem, mem_size, x_read64, compute_op_cycles(n), n);
+                    if (config_skip_bad_sets) {
+                        fix_follower_set();
+                        run_test(id, "x_read64", mem, mem_size, x_read64_skip, compute_op_cycles(n), n);
+                    } else {
+                        run_test(id, "x_read64", mem, mem_size, x_read64, compute_op_cycles(n), n);
+                    }
                 }
                 break;
 
@@ -1079,6 +1131,7 @@ static void usage(char *name)
         "  -x           enable limited thread test program\n"
         "  -L           enable log increment for op size\n"
         "  -H           enable huge page support\n"
+        "  -k           skip bad sets (%d-%d)\n"
         "\n",
         name,
         config_thread_memory_size,
@@ -1088,7 +1141,9 @@ static void usage(char *name)
         config_test_loops,
         config_max_threads,
         config_op_cache,
-        config_cache_warm
+        config_cache_warm,
+        BAD_SET_LOW,
+        BAD_SET_HIGH
     );
     exit(2);
 }
@@ -1116,7 +1171,7 @@ static unsigned long ensure_pow2(unsigned long x)
 static void parse_args(int argc, char *argv[])
 {
     char ch;
-    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:n:C:w:TISxLH")) != -1) {
+    while ((ch = getopt(argc, argv, "m:g:c:o:t:l:z:s:n:C:w:TISxLHk")) != -1) {
         switch(ch) {
             case 'm':
                 config_thread_memory_size = strtol(optarg, NULL, 10);
@@ -1184,6 +1239,9 @@ static void parse_args(int argc, char *argv[])
             case 'H':
                 config_map_hugetlb = 1;
                 break;
+            case 'k':
+                config_skip_bad_sets = 1;
+                break;    
             case '?':
             default:
                 usage(argv[0]);
