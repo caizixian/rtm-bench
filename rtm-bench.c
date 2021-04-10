@@ -82,8 +82,8 @@ typedef struct _thread_log_t {
 
 // default configuration
 static unsigned int  config_max_threads         = 8;
-static unsigned long config_thread_memory_size  = 1024 * 1024 * 1024;
-static unsigned long config_thread_gap_size     = 1024 * 1024 * 1024;
+static unsigned long config_thread_memory_size  = 512 * 1024 * 1024;
+static unsigned long config_thread_gap_size     = 512 * 1024 * 1024;
 static unsigned long config_op_max_size         = 32 * 1024;
 static unsigned long config_op_max_cycles       = 128 * 1024;
 static unsigned long config_test_loops          = 1;
