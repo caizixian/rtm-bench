@@ -1,6 +1,7 @@
 /*-----------------------------------------------------------------------------
  rtm-bench - A simple restricted transactional memory micro-benchmark.
  Copyright (c) 2013, 2021 Carl G. Ritson <critson@perlfu.co.uk>
+ Copyright (c) 2020, 2021 Zixian Cai
 
  gcc -Wall -O2 rtm-bench.c -o rtm-bench -lpthread -lrt
 
