@@ -7,6 +7,8 @@ base_args = "-o 33554432 -t 4 -T -I -S -L {}"
 
 tests = []
 
+confirmed = False
+
 for arg in sys.argv[1:]:
     if arg == "HugeTLB":
         base_args = base_args.format("-H {}")
@@ -55,10 +57,15 @@ for arg in sys.argv[1:]:
         # figure 6
         # Cap the number of txns to 16, the experiment is very expensive
         tests += [base_args.format("-C 1 -w {} -n 16".format(2**n)) for n in range(0, 9)]
+    elif arg == "-y":
+        confirmed = True
 
-print("Execute the following tests?")
-for test in tests:
-    print(test)
-answer = input("y/n? ")
-if answer == "y" or answer == "Y":
+if not confirmed:
+    print("Execute the following tests?")
+    for test in tests:
+        print(test)
+    answer = input("y/n? ")
+    if answer == "y" or answer == "Y":
+        run_tests(tests)
+else:
     run_tests(tests)
