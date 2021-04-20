@@ -63,7 +63,7 @@ for arg in sys.argv[1:]:
 if not confirmed:
     print("Execute the following tests?")
     for test in tests:
-        print(test)
+        print("./rtm-bench {}".format(test))
     answer = input("y/n? ")
     if answer == "y" or answer == "Y":
         run_tests(tests)
