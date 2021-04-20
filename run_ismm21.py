@@ -25,7 +25,7 @@ for arg in sys.argv[1:]:
         # Reuse configuration
         # figure 3
         # no cache related operation
-        # vary the number of transactions for each size
+        # vary the number (a fixed number not a cap) of transactions for each size
         tests += [base_args.format("-C 0 -s 0 -n {}".format(2**n)) for n in range(0, 13)]
     elif arg == "Invalidation":
         # Invalidation
@@ -37,7 +37,7 @@ for arg in sys.argv[1:]:
         with open("/proc/wbinvd") as fd:
             content = fd.read()
             assert "WBINVD executed from CPU" in content
-        tests += [base_args.format("-C 2")]
+        tests += [base_args.format("-C 2 -n 4096")]
     elif arg == "Warmup":
         # Warmup
         # figure 5
