@@ -1,5 +1,5 @@
 # rtm-bench
-This repo contains the code used to produce the results reported in our [ISMM 2021 paper](https://doi.org/10.1145/3459898.3463901) "Understanding and Utilizing Hardware Transactional Memory Capacity".
+This repo contains the code used to produce the results reported in our [ISMM 2021 paper](https://doi.org/10.1145/3459898.3463901) "Understanding and Utilizing Hardware Transactional Memory Capacity". You can watch the talk on [YouTube](https://www.youtube.com/watch?v=IIETZja3ops).
 
 We extended the [original work](https://github.com/perlfu/rtm-bench) by Carl Ritson.
 
